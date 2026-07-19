@@ -244,3 +244,16 @@ If you like this project, consider giving it a ⭐ on GitHub.
 This project is released under the MIT License.
 
 Feel free to use, modify, and learn from it for educational purposes.
+
+screenshot📷
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-21-56_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/3282639e-6f62-41ba-9032-8b59e494df5f" />
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-38-23_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/bcfa2697-0cd5-4162-9347-0bb4975cf459" />
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-42-69_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/93f68eb2-210e-4aa9-90a2-12a8d5767b65" />
+
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-51-00_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/d3a2fcfd-d7f8-427e-b956-b91c45f25107" />
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-55-00_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/39147b2d-c900-46da-9fdd-5452ffcc1268" />
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-26-58-82_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/e4b071d0-6c97-4cee-9459-1fc7de18b16e" />
+
+
+
+<img width="1080" height="2400" alt="Screenshot_2026-07-19-20-27-04-80_a2cf8efcdd42a8e6f7906303f104fb67" src="https://github.com/user-attachments/assets/2989af79-0412-4d86-9765-36afd1402015" />
