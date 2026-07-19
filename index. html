@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlashMap – Internet Scale Visualization</title>
+  <style>
+    /* ----- Reset & Base ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      background: #050816;
+      color: #d0e0ff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    a {
+      color: #00E5FF;
+      text-decoration: none;
+    }
+
+    /* ----- Scrollbar ----- */
+    ::-webkit-scrollbar {
+      width: 6px;
+      background: #0b1428;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #00E5FF;
+      border-radius: 20px;
+      box-shadow: 0 0 20px #00E5FF66;
+    }
+
+    /* ----- Navbar (Sticky Glass) ----- */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(5, 8, 22, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0, 229, 255, 0.08);
+      z-index: 999;
+      transition: 0.3s;
+    }
+    .navbar .logo {
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #00E5FF, #7BFF00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .navbar .logo span {
+      color: #7BFF00;
+      -webkit-text-fill-color: #7BFF00;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: #8899cc;
+      transition: 0.3s;
+      position: relative;
+    }
+    .nav-links a:hover {
+      color: #00E5FF;
+      text-shadow: 0 0 20px #00E5FF66;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #00E5FF;
+      transition: 0.3s;
+      box-shadow: 0 0 12px #00E5FF;
+    }
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+    .menu-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    .menu-toggle span {
+      width: 28px;
+      height: 2px;
+      background: #00E5FF;
+      border-radius: 4px;
+      transition: 0.3s;
+    }
+
+    /* ----- Hero (Fullscreen with Canvas) ----- */
+    #hero {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    #hero canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      padding: 20px;
+      background: rgba(5, 8, 22, 0.3);
+      backdrop-filter: blur(4px);
+      border-radius: 40px;
+      border: 1px solid rgba(0, 229, 255, 0.08);
+      padding: 40px 50px;
+    }
+    .hero-content h1 {
+      font-size: 4.2rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #00E5FF, #7BFF00, #8A6EFF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 80px rgba(0, 229, 255, 0.15);
+      margin-bottom: 12px;
+    }
+    .hero-content p {
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: #a0b8dd;
+      letter-spacing: 0.15em;
+      margin-bottom: 24px;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 22px;
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 40px;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: #00E5FF;
+      backdrop-filter: blur(4px);
+      margin-bottom: 20px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 34px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: 0.3s;
+      border: 1px solid #00E5FF;
+      color: #00E5FF;
+      background: transparent;
+      backdrop-filter: blur(4px);
+    }
+    .btn:hover {
+      background: #00E5FF;
+      color: #050816;
+      box-shadow: 0 0 40px #00E5FF77;
+      transform: scale(1.04);
+    }
+    .btn-secondary {
+      border-color: #8A6EFF;
+      color: #8A6EFF;
+    }
+    .btn-secondary:hover {
+      background: #8A6EFF;
+      color: #050816;
+      box-shadow: 0 0 40px #8A6EFF77;
+    }
+
+    /* ----- Common Sections ----- */
+    section {
+      padding: 80px 20px;
+      position: relative;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 2.8rem;
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: 16px;
+      letter-spacing: 0.02em;
+    }
+    .section-title span {
+      background: linear-gradient(135deg, #00E5FF, #7BFF00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .section-sub {
+      text-align: center;
+      color: #8899bb;
+      font-size: 1.1rem;
+      max-width: 700px;
+      margin: 0 auto 50px;
+    }
+
+    /* ----- Glass Card ----- */
+    .glass {
+      background: rgba(5, 8, 22, 0.5);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(0, 229, 255, 0.08);
+      border-radius: 28px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 0 80px rgba(0, 229, 255, 0.02);
+      transition: 0.4s;
+    }
+    .glass:hover {
+      border-color: rgba(0, 229, 255, 0.25);
+      box-shadow: 0 8px 60px rgba(0, 229, 255, 0.06);
+    }
+
+    /* ----- Live Map (Canvas) ----- */
+    #live-map {
+      padding-top: 40px;
+    }
+    #map-canvas {
+      width: 100%;
+      height: 500px;
+      border-radius: 28px;
+      border: 1px solid rgba(0, 229, 255, 0.08);
+      background: #050816;
+      display: block;
+    }
+
+    /* ----- Statistics Cards ----- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-top: 30px;
+    }
+    .stat-card {
+      padding: 28px 20px;
+      text-align: center;
+      border: 1px solid rgba(0, 229, 255, 0.06);
+      border-radius: 24px;
+      background: rgba(5, 8, 22, 0.4);
+      backdrop-filter: blur(4px);
+    }
+    .stat-card .number {
+      font-size: 2.6rem;
+      font-weight: 300;
+      background: linear-gradient(135deg, #00E5FF, #7BFF00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-family: 'Courier New', monospace;
+    }
+    .stat-card .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8899bb;
+      margin-top: 8px;
+    }
+    .stat-card .trend {
+      font-size: 0.8rem;
+      color: #7BFF00;
+      margin-top: 8px;
+    }
+
+    /* ----- Scanner Console ----- */
+    .console {
+      background: #0b1428;
+      border: 1px solid rgba(0, 229, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px 28px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+      color: #a0b8dd;
+      min-height: 160px;
+      box-shadow: 0 0 60px rgba(0, 229, 255, 0.02);
+      margin-top: 30px;
+    }
+    .console .line {
+      padding: 4px 0;
+    }
+    .console .prompt {
+      color: #00E5FF;
+    }
+    .console .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1.2em;
+      background: #00E5FF;
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ----- Heatmap ----- */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .heat-region {
+      padding: 30px 16px;
+      border-radius: 20px;
+      text-align: center;
+      background: rgba(0, 229, 255, 0.02);
+      border: 1px solid rgba(0, 229, 255, 0.04);
+      transition: 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .heat-region::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, rgba(0, 229, 255, 0.05), transparent 70%);
+      animation: pulseGlow 3s infinite alternate ease-in-out;
+    }
+    @keyframes pulseGlow {
+      0% { opacity: 0.3; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+    .heat-region .region-name {
+      font-weight: 600;
+      color: #d0e0ff;
+      position: relative;
+    }
+    .heat-region .region-value {
+      font-size: 1.6rem;
+      font-weight: 300;
+      color: #00E5FF;
+      position: relative;
+    }
+
+    /* ----- Charts (Canvas) ----- */
+    #chart-canvas {
+      width: 100%;
+      height: 320px;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 229, 255, 0.05);
+      background: #0b1428;
+      margin-top: 20px;
+    }
+
+    /* ----- Satellite Panel ----- */
+    .satellite-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      align-items: center;
+      margin-top: 30px;
+    }
+    .satellite-visual {
+      text-align: center;
+      padding: 30px;
+    }
+    .satellite-visual .orbit-icon {
+      font-size: 5rem;
+      display: block;
+      animation: orbitSpin 8s linear infinite;
+    }
+    @keyframes orbitSpin {
+      0% { transform: rotate(0deg) scale(1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    .satellite-data {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .sat-data-item {
+      background: rgba(0, 229, 255, 0.02);
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 229, 255, 0.04);
+      text-align: center;
+    }
+    .sat-data-item .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #8899bb;
+    }
+    .sat-data-item .value {
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: #00E5FF;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ----- Footer ----- */
+    footer {
+      border-top: 1px solid rgba(0, 229, 255, 0.05);
+      padding: 40px 20px 30px;
+      text-align: center;
+      color: #4a5a7a;
+      font-size: 0.9rem;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    footer .footer-brand {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #00E5FF;
+      letter-spacing: 0.05em;
+    }
+
+    /* ----- Responsive ----- */
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 12px 20px;
+      }
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        background: rgba(5, 8, 22, 0.95);
+        backdrop-filter: blur(16px);
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        padding: 20px;
+        gap: 16px;
+        border-bottom: 1px solid rgba(0, 229, 255, 0.05);
+      }
+      .nav-links.open {
+        display: flex;
+      }
+      .menu-toggle {
+        display: flex;
+      }
+      .hero-content h1 {
+        font-size: 2.6rem;
+      }
+      .hero-content p {
+        font-size: 1.1rem;
+      }
+      .hero-content {
+        padding: 30px 20px;
+      }
+      .section-title {
+        font-size: 2rem;
+      }
+      .satellite-panel {
+        grid-template-columns: 1fr;
+      }
+      #map-canvas {
+        height: 300px;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .heatmap-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="logo">FLASH<span>MAP</span></div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#hero">Home</a></li>
+      <li><a href="#live-map">Live Scan</a></li>
+      <li><a href="#world-map">World Map</a></li>
+      <li><a href="#analytics">Analytics</a></li>
+      <li><a href="#statistics">Statistics</a></li>
+      <li><a href="#docs">Documentation</a></li>
+    </ul>
+    <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">🛰 SATELLITE CYBER INTELLIGENCE</div>
+      <h1>FLASHMAP</h1>
+      <p>Internet Scale Visualization Scanner</p>
+      <p style="font-size: 1rem; color: #8A6EFF; letter-spacing: 0.2em; margin-bottom: 24px;">
+        Observe • Discover • Analyze
+      </p>
+      <div class="btn-group">
+        <a href="#live-map" class="btn">⟳ Launch Scan</a>
+        <a href="#analytics" class="btn btn-secondary">Explore Data</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LIVE INTERNET MAP ========== -->
+  <section id="live-map">
+    <h2 class="section-title"><span>🌍 Live Internet Map</span></h2>
+    <p class="section-sub">Real‑time visualization of global network activity – simulated for educational demonstration.</p>
+    <canvas id="map-canvas"></canvas>
+  </section>
+
+  <!-- ========== STATISTICS ========== -->
+  <section id="statistics">
+    <h2 class="section-title"><span>📊 Live Statistics</span></h2>
+    <p class="section-sub">Animated global network metrics – updated in real‑time.</p>
+    <div class="stats-grid">
+      <div class="stat-card glass">
+        <div class="number" id="statIPv4">4.29B</div>
+        <div class="label">IPv4 Space</div>
+        <div class="trend">↑ 0.02%</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="number" id="statHosts">18M</div>
+        <div class="label">Active Hosts</div>
+        <div class="trend">↑ 0.8%</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="number" id="statPorts">65,535</div>
+        <div class="label">Ports Observed</div>
+        <div class="trend">—</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="number" id="statPing">12 ms</div>
+        <div class="label">Avg Response</div>
+        <div class="trend">↓ 0.3 ms</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="number" id="statPackets">1.25M</div>
+        <div class="label">Packets Visualized</div>
+        <div class="trend">↑ 12.4%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SCANNER CONSOLE ========== -->
+  <section id="console">
+    <h2 class="section-title"><span>📡 Scanner Console</span></h2>
+    <p class="section-sub">Simulated network visualization engine – typing effect.</p>
+    <div class="glass" style="padding: 10px;">
+      <div class="console" id="consoleOutput">
+        <div class="line"><span class="prompt">$</span> Initializing visualization...</div>
+        <div class="line"><span class="prompt">$</span> Loading world database...</div>
+        <div class="line"><span class="prompt">$</span> Discovering simulated hosts...</div>
+        <div class="line"><span class="prompt">$</span> Visualizing topology...</div>
+        <div class="line"><span class="prompt">$</span> Rendering connections...</div>
+        <div class="line"><span class="prompt">$</span> Completed. <span class="cursor"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== GLOBAL HEATMAP ========== -->
+  <section id="heatmap">
+    <h2 class="section-title"><span>🌐 Global Heatmap</span></h2>
+    <p class="section-sub">Animated regional activity intensity (simulated).</p>
+    <div class="heatmap-grid">
+      <div class="heat-region glass"><div class="region-name">North America</div><div class="region-value">92%</div></div>
+      <div class="heat-region glass"><div class="region-name">Europe</div><div class="region-value">88%</div></div>
+      <div class="heat-region glass"><div class="region-name">Asia</div><div class="region-value">95%</div></div>
+      <div class="heat-region glass"><div class="region-name">South America</div><div class="region-value">67%</div></div>
+      <div class="heat-region glass"><div class="region-name">Africa</div><div class="region-value">48%</div></div>
+      <div class="heat-region glass"><div class="region-name">Australia</div><div class="region-value">71%</div></div>
+    </div>
+  </section>
+
+  <!-- ========== CHARTS ========== -->
+  <section id="analytics">
+    <h2 class="section-title"><span>📈 Network Analytics</span></h2>
+    <p class="section-sub">Simulated distribution and usage charts.</p>
+    <canvas id="chart-canvas"></canvas>
+  </section>
+
+  <!-- ========== SATELLITE PANEL ========== -->
+  <section id="satellite">
+    <h2 class="section-title"><span>🛰️ Satellite Intelligence</span></h2>
+    <div class="glass satellite-panel" style="padding: 30px;">
+      <div class="satellite-visual">
+        <span class="orbit-icon">🛰️</span>
+        <p style="color: #8899bb; font-size: 0.8rem; margin-top: 8px;">Orbital scan active</p>
+      </div>
+      <div class="satellite-data">
+        <div class="sat-data-item"><div class="label">Altitude</div><div class="value" id="satAlt">408 km</div></div>
+        <div class="sat-data-item"><div class="label">Velocity</div><div class="value" id="satVel">7.67 km/s</div></div>
+        <div class="sat-data-item"><div class="label">Coverage</div><div class="value" id="satCov">74%</div></div>
+        <div class="sat-data-item"><div class="label">Signal</div><div class="value" id="satSig">98%</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="footer-brand">FLASHMAP</div>
+    <p style="margin: 8px 0;">Internet Visualization Platform — Educational Network Intelligence Dashboard</p>
+    <p style="color: #2a3a5a; font-size: 0.8rem;">
+      Built using HTML • CSS • JavaScript &nbsp;|&nbsp; Designed by Raj Gautam
+    </p>
+    <p style="margin-top: 12px; font-size: 0.7rem; color: #1a2a4a;">
+      ⚠️ All data simulated for educational and portfolio demonstration.
+    </p>
+  </footer>
+
+  <script>
+    // ========== MOBILE MENU ==========
+    document.getElementById('menuToggle').addEventListener('click', function() {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+    // Close menu on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.getElementById('navLinks').classList.remove('open');
+      });
+    });
+
+    // ========== HERO CANVAS – EARTH + SATELLITE + RADAR ==========
+    (function() {
+      const canvas = document.getElementById('hero-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H;
+
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Stars
+      const stars = [];
+      for (let i = 0; i < 300; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: Math.random() * 1.5 + 0.5,
+          twinkle: Math.random() * 2 * Math.PI,
+          speed: 0.02 + Math.random() * 0.03
+        });
+      }
+
+      // Earth parameters
+      let earthAngle = 0;
+      const earthRadius = Math.min(W, H) * 0.2;
+      const cx = W / 2;
+      const cy = H / 2;
+
+      // Satellite orbit
+      let satAngle = 0;
+
+      // Radar sweep
+      let radarAngle = 0;
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // --- Background gradient ---
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.7);
+        grad.addColorStop(0, '#0a1a3a');
+        grad.addColorStop(1, '#050816');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // --- Stars ---
+        stars.forEach(s => {
+          s.twinkle += s.speed;
+          const alpha = 0.4 + 0.6 * Math.sin(s.twinkle);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, 2 * Math.PI);
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fill();
+          // glow
+          if (s.r > 1) {
+            ctx.shadowColor = '#00E5FF44';
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        });
+
+        // --- Grid overlay (subtle) ---
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.03)';
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x < W; x += 60) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, H);
+          ctx.stroke();
+        }
+        for (let y = 0; y < H; y += 60) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(W, y);
+          ctx.stroke();
+        }
+
+        // --- Earth (globe with grid) ---
+        ctx.save();
+        ctx.translate(cx, cy);
+        // Rotate earth
+        ctx.rotate(earthAngle);
+        earthAngle += 0.0015;
+
+        // Main sphere
+        const gradEarth = ctx.createRadialGradient(-earthRadius*0.2, -earthRadius*0.2, 0, 0, 0, earthRadius);
+        gradEarth.addColorStop(0, '#1a4a8a');
+        gradEarth.addColorStop(0.6, '#0a2a5a');
+        gradEarth.addColorStop(1, '#050816');
+        ctx.beginPath();
+        ctx.arc(0, 0, earthRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = gradEarth;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Draw continents as simplified dots/ellipses (stylized)
+        const continents = [
+          // North America
+          { x: -earthRadius*0.3, y: -earthRadius*0.2, rx: earthRadius*0.2, ry: earthRadius*0.15 },
+          // South America
+          { x: -earthRadius*0.1, y: earthRadius*0.25, rx: earthRadius*0.08, ry: earthRadius*0.2 },
+          // Europe
+          { x: earthRadius*0.15, y: -earthRadius*0.25, rx: earthRadius*0.12, ry: earthRadius*0.08 },
+          // Africa
+          { x: earthRadius*0.2, y: earthRadius*0.05, rx: earthRadius*0.12, ry: earthRadius*0.18 },
+          // Asia
+          { x: earthRadius*0.4, y: -earthRadius*0.1, rx: earthRadius*0.25, ry: earthRadius*0.18 },
+          // Australia
+          { x: earthRadius*0.5, y: earthRadius*0.3, rx: earthRadius*0.07, ry: earthRadius*0.06 },
+        ];
+        continents.forEach(c => {
+          ctx.beginPath();
+          ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+
+        // Grid lines on Earth (latitude/longitude)
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.05)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 12; i++) {
+          const angle = (i / 12) * 2 * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(earthRadius * Math.cos(angle), earthRadius * Math.sin(angle));
+          ctx.stroke();
+        }
+        for (let r = 0.3; r <= 0.9; r += 0.2) {
+          ctx.beginPath();
+          ctx.arc(0, 0, earthRadius * r, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+
+        // Glow around Earth
+        const glow = ctx.createRadialGradient(0, 0, earthRadius*0.9, 0, 0, earthRadius*1.6);
+        glow.addColorStop(0, 'rgba(0, 229, 255, 0.08)');
+        glow.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.beginPath();
+        ctx.arc(0, 0, earthRadius*1.6, 0, 2 * Math.PI);
+        ctx.fillStyle = glow;
+        ctx.fill();
+
+        ctx.restore();
+
+        // --- Radar Sweep ---
+        ctx.save();
+        ctx.translate(cx, cy);
+        radarAngle += 0.01;
+        ctx.rotate(radarAngle);
+        // Sweep line
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(earthRadius * 1.7, 0);
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Sweep arc
+        ctx.beginPath();
+        ctx.arc(0, 0, earthRadius * 1.7, 0, 0.08);
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+        ctx.lineWidth = 8;
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Satellite orbiting ---
+        satAngle += 0.012;
+        const satOrbitRadius = earthRadius * 1.9;
+        const satX = cx + satOrbitRadius * Math.cos(satAngle);
+        const satY = cy + satOrbitRadius * Math.sin(satAngle);
+        // Draw orbit path (dashed)
+        ctx.beginPath();
+        ctx.arc(cx, cy, satOrbitRadius, 0, 2 * Math.PI);
+        ctx.setLineDash([4, 8]);
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Satellite body
+        ctx.shadowColor = '#00E5FF88';
+        ctx.shadowBlur = 30;
+        ctx.beginPath();
+        ctx.arc(satX, satY, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = '#00E5FF';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // Satellite glow
+        ctx.beginPath();
+        ctx.arc(satX, satY, 20, 0, 2 * Math.PI);
+        const glowSat = ctx.createRadialGradient(satX, satY, 0, satX, satY, 20);
+        glowSat.addColorStop(0, 'rgba(0, 229, 255, 0.2)');
+        glowSat.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = glowSat;
+        ctx.fill();
+
+        // --- Connection lines from satellite to Earth (signal) ---
+        ctx.beginPath();
+        ctx.moveTo(satX, satY);
+        ctx.lineTo(cx, cy);
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.06)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+
+      // Resize handler
+      window.addEventListener('resize', resize);
+    })();
+
+    // ========== LIVE MAP CANVAS (World map with connections) ==========
+    (function() {
+      const canvas = document.getElementById('map-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H;
+
+      function resizeMap() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        W = canvas.width;
+        H = canvas.height;
+      }
+      resizeMap();
+      window.addEventListener('resize', resizeMap);
+
+      // Dummy city coordinates (normalized 0-1)
+      const cities = [
+        { name: 'USA', x: 0.2, y: 0.25 },
+        { name: 'India', x: 0.6, y: 0.6 },
+        { name: 'Germany', x: 0.45, y: 0.3 },
+        { name: 'Japan', x: 0.8, y: 0.35 },
+        { name: 'Australia', x: 0.85, y: 0.75 },
+        { name: 'Brazil', x: 0.3, y: 0.7 },
+        { name: 'South Africa', x: 0.5, y: 0.7 },
+        { name: 'UK', x: 0.4, y: 0.25 }
+      ];
+
+      // Connections
+      const connections = [
+        [0, 1], [0, 2], [1, 2], [1, 3], [2, 4], [3, 4], [0, 5], [1, 6], [2, 7]
+      ];
+
+      let time = 0;
+
+      function drawMap() {
+        ctx.clearRect(0, 0, W, H);
+        // Background
+        ctx.fillStyle = '#0b1428';
+        ctx.fillRect(0, 0, W, H);
+
+        // Grid
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.02)';
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x < W; x += 40) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, H);
+          ctx.stroke();
+        }
+        for (let y = 0; y < H; y += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(W, y);
+          ctx.stroke();
+        }
+
+        // Draw connections with animated pulses
+        connections.forEach(([i, j], idx) => {
+          const c1 = cities[i];
+          const c2 = cities[j];
+          const x1 = c1.x * W;
+          const y1 = c1.y * H;
+          const x2 = c2.x * W;
+          const y2 = c2.y * H;
+
+          // Animated dash offset
+          const offset = (time * 0.1 + idx * 0.5) % 1;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = `rgba(0, 229, 255, ${0.15 + 0.1 * Math.sin(time * 0.02 + idx)})`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 12]);
+          ctx.lineDashOffset = -offset * 18;
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Animated pulse dot along the line
+          const t = (time * 0.015 + idx * 0.1) % 1;
+          const px = x1 + (x2 - x1) * t;
+          const py = y1 + (y2 - y1) * t;
+          ctx.beginPath();
+          ctx.arc(px, py, 3, 0, 2 * Math.PI);
+          ctx.fillStyle = '#00E5FF';
+          ctx.shadowColor = '#00E5FF88';
+          ctx.shadowBlur = 20;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+
+        // Draw cities (nodes)
+        cities.forEach((c, idx) => {
+          const x = c.x * W;
+          const y = c.y * H;
+          // Glow
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, 20);
+          grad.addColorStop(0, 'rgba(0, 229, 255, 0.2)');
+          grad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+          ctx.beginPath();
+          ctx.arc(x, y, 20, 0, 2 * Math.PI);
+          ctx.fillStyle = grad;
+          ctx.fill();
+          // Dot
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = '#7BFF00';
+          ctx.shadowColor = '#7BFF0088';
+          ctx.shadowBlur = 20;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          // Label
+          ctx.fillStyle = '#8899bb';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(c.name, x, y - 14);
+        });
+
+        // Animated scanning line (radar sweep)
+        const angle = time * 0.02;
+        ctx.beginPath();
+        ctx.moveTo(W/2, H/2);
+        ctx.lineTo(W/2 + W*0.7 * Math.cos(angle), H/2 + W*0.7 * Math.sin(angle));
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.05)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        time++;
+        requestAnimationFrame(drawMap);
+      }
+      drawMap();
+    })();
+
+    // ========== ANIMATED STATISTICS COUNTERS ==========
+    (function() {
+      const targets = {
+        statIPv4: { value: 4.29, suffix: 'B', decimals: 2, step: 0.001 },
+        statHosts: { value: 18, suffix: 'M', decimals: 0, step: 0.02 },
+        statPorts: { value: 65535, suffix: '', decimals: 0, step: 0.5 },
+        statPing: { value: 12, suffix: ' ms', decimals: 0, step: 0.05 },
+        statPackets: { value: 1.25, suffix: 'M', decimals: 2, step: 0.005 }
+      };
+      Object.keys(targets).forEach(id => {
+        const el = document.getElementById(id);
+        const t = targets[id];
+        let current = t.value;
+        setInterval(() => {
+          current += t.step * (Math.random() * 0.5 + 0.5);
+          if (current > t.value * 1.1) current = t.value * 0.95;
+          if (id === 'statPorts') {
+            el.textContent = Math.floor(current).toLocaleString();
+          } else if (id === 'statPing') {
+            el.textContent = Math.floor(current) + t.suffix;
+          } else {
+            el.textContent = current.toFixed(t.decimals) + t.suffix;
+          }
+        }, 1200);
+      });
+    })();
+
+    // ========== CONSOLE TYPING EFFECT ==========
+    (function() {
+      const consoleEl = document.getElementById('consoleOutput');
+      const lines = [
+        'Initializing visualization...',
+        'Loading world database...',
+        'Discovering simulated hosts...',
+        'Visualizing topology...',
+        'Rendering connections...',
+        'Completed.'
+      ];
+      let lineIdx = 0;
+      let charIdx = 0;
+      let output = '';
+      let isTyping = false;
+
+      function typeLine() {
+        if (lineIdx >= lines.length) {
+          // add blinking cursor
+          return;
+        }
+        const line = lines[lineIdx];
+        if (charIdx < line.length) {
+          output += line[charIdx];
+          charIdx++;
+          // Update console (last line with cursor)
+          let html = '';
+          for (let i = 0; i < lineIdx; i++) {
+            html += `<div class="line"><span class="prompt">$</span> ${lines[i]}</div>`;
+          }
+          html += `<div class="line"><span class="prompt">$</span> ${output}<span class="cursor"></span></div>`;
+          consoleEl.innerHTML = html;
+          setTimeout(typeLine, 18 + Math.random() * 25);
+        } else {
+          // line complete, move to next
+          output = '';
+          charIdx = 0;
+          lineIdx++;
+          if (lineIdx < lines.length) {
+            setTimeout(typeLine, 300);
+          } else {
+            // final
+            let finalHtml = '';
+            for (let i = 0; i < lines.length; i++) {
+              finalHtml += `<div class="line"><span class="prompt">$</span> ${lines[i]}</div>`;
+            }
+            finalHtml += `<div class="line"><span class="prompt">$</span> <span class="cursor"></span></div>`;
+            consoleEl.innerHTML = finalHtml;
+          }
+        }
+      }
+      // start after a delay
+      setTimeout(typeLine, 600);
+    })();
+
+    // ========== CHART (Bar chart) ==========
+    (function() {
+      const canvas = document.getElementById('chart-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H;
+
+      function resizeChart() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = canvas.clientWidth || rect.width - 40;
+        canvas.height = canvas.clientHeight || 320;
+        W = canvas.width;
+        H = canvas.height;
+        drawChart();
+      }
+
+      const data = [
+        { label: 'HTTP', value: 42 },
+        { label: 'HTTPS', value: 31 },
+        { label: 'DNS', value: 15 },
+        { label: 'SSH', value: 8 },
+        { label: 'SMTP', value: 4 }
+      ];
+
+      function drawChart() {
+        ctx.clearRect(0, 0, W, H);
+        const pad = { top: 30, bottom: 30, left: 40, right: 20 };
+        const chartW = W - pad.left - pad.right;
+        const chartH = H - pad.top - pad.bottom;
+        const maxVal = Math.max(...data.map(d => d.value)) * 1.2;
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.05)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.top + chartH - (i / 4) * chartH;
+          ctx.beginPath();
+          ctx.moveTo(pad.left, y);
+          ctx.lineTo(W - pad.right, y);
+          ctx.stroke();
+          ctx.fillStyle = '#4a5a7a';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(Math.round((i / 4) * maxVal), pad.left - 8, y + 4);
+        }
+
+        // Bars
+        const barWidth = Math.min(chartW / data.length * 0.6, 50);
+        const gap = (chartW - barWidth * data.length) / (data.length + 1);
+        data.forEach((d, idx) => {
+          const x = pad.left + gap + idx * (barWidth + gap);
+          const h = (d.value / maxVal) * chartH;
+          const y = pad.top + chartH - h;
+
+          // Bar gradient
+          const grad = ctx.createLinearGradient(x, y, x, pad.top + chartH);
+          grad.addColorStop(0, '#00E5FF');
+          grad.addColorStop(1, '#7BFF00');
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#00E5FF66';
+          ctx.shadowBlur = 20;
+          ctx.fillRect(x, y, barWidth, h);
+          ctx.shadowBlur = 0;
+
+          // Label
+          ctx.fillStyle = '#d0e0ff';
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(d.label, x + barWidth/2, pad.top + chartH + 20);
+          // Value on top
+          ctx.fillStyle = '#8899bb';
+          ctx.font = '10px monospace';
+          ctx.fillText(d.value + '%', x + barWidth/2, y - 8);
+        });
+
+        // Title
+        ctx.fillStyle = '#4a5a7a';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Protocol Distribution (simulated)', W/2, 18);
+      }
+
+      resizeChart();
+      window.addEventListener('resize', resizeChart);
+    })();
+
+    // ========== SATELLITE PANEL ANIMATION ==========
+    (function() {
+      const altEl = document.getElementById('satAlt');
+      const velEl = document.getElementById('satVel');
+      const covEl = document.getElementById('satCov');
+      const sigEl = document.getElementById('satSig');
+
+      setInterval(() => {
+        const alt = 400 + Math.floor(Math.random() * 20);
+        const vel = (7.6 + Math.random() * 0.2).toFixed(2);
+        const cov = 70 + Math.floor(Math.random() * 10);
+        const sig = 95 + Math.floor(Math.random() * 5);
+        altEl.textContent = alt + ' km';
+        velEl.textContent = vel + ' km/s';
+        covEl.textContent = cov + '%';
+        sigEl.textContent = sig + '%';
+      }, 2500);
+    })();
+
+    // ========== HEATMAP REGION GLOW ANIMATION ==========
+    // Already handled by CSS keyframes
+  </script>
+</body>
+</html>
